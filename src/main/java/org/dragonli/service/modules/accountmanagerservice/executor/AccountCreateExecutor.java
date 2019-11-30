@@ -20,12 +20,12 @@ public class AccountCreateExecutor {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Long createChildAccount(Long userId, String reflexId, AssetEntity asset) {
         AccountEntity userAccount = accountsRepository.findByUserIdAndReflexIdAndAssetName(
-                userId, reflexId, asset.getCode());
+                userId, reflexId, asset.getCurrency());
         if (userAccount == null) {
             userAccount = new AccountEntity();
             userAccount.setStatus(AccountsStatus.FICTITIOUS);
             userAccount.setAssetId(asset.getId());
-            userAccount.setAssetName(asset.getCode());
+            userAccount.setCurrency(asset.getCurrency());
             userAccount.setUserId(userId);
             userAccount.setReflexId(reflexId);
             userAccount.setApplicationId(0L);

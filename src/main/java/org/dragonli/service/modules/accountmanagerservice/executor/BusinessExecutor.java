@@ -69,7 +69,7 @@ public class BusinessExecutor {
             fund.setFlowAmount(amount);
             fund.setTimeout(3000L);
             fund.setUserId(account.getReflexId());
-            fund.setCurrency(asset.getCode());
+            fund.setCurrency(asset.getCurrency());
             fund.setFlowStatus(EvidenceStatus.INIT);
             fund.setFlowType(business.getType());
             fund.setBusinessId(business.getId());
