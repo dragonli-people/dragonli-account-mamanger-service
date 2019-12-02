@@ -28,7 +28,6 @@ public class AccountCreateExecutor {
             userAccount.setCurrency(asset.getCurrency());
             userAccount.setUserId(userId);
             userAccount.setReflexId(reflexId);
-            userAccount.setApplicationId(0L);
             userAccount.setBalance(BigDecimal.ZERO);
             userAccount.setFrozen(BigDecimal.ZERO);
             userAccount.setOverdraft(BigDecimal.ZERO);
