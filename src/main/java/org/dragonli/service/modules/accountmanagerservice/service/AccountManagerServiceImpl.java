@@ -89,7 +89,7 @@ public class AccountManagerServiceImpl {  //implements AccountManagerService {
 
 	public Map<String,Object> withdrawal(Map<String,Object> jsonParams) throws Exception {
 		// TODO Auto-generated method stub
-//		Object serverSignal = accountRedisson.getBucket(serverPauseSignalRedisKey).get();
+//		Object serverSignal = jedisPool.getBucket(serverPauseSignalRedisKey).get();
 //		serverSignal = (null == serverSignal || "".equals(serverSignal.toString().trim()))
 //				? 0 : Integer.parseInt(serverSignal.toString().trim());
 //		if(!serverSignal.equals(0))return null;
@@ -101,8 +101,8 @@ public class AccountManagerServiceImpl {  //implements AccountManagerService {
 	public String payment(Long userId,String reflexId,String target
 			,BigDecimal amount,String currency,String orderId,String remark,Boolean readOnly) throws Exception {
 		//todo
-//		Object serverSignalSource = accountRedisson.getBucket(serverPauseSignalRedisKey).get();
-//		final Object serverSignalInfo = accountRedisson.getBucket(serverPauseSignalRedisInfoKey).get();
+//		Object serverSignalSource = jedisPool.getBucket(serverPauseSignalRedisKey).get();
+//		final Object serverSignalInfo = jedisPool.getBucket(serverPauseSignalRedisInfoKey).get();
 //		final int serverSignal = (null == serverSignalSource || "".equals(serverSignalSource.toString().trim()))
 //				? 0 : Integer.parseInt(serverSignalSource.toString().trim());
 //		if(serverSignal != 0)return new HashMap<String,Object>()
@@ -156,8 +156,8 @@ public class AccountManagerServiceImpl {  //implements AccountManagerService {
 	) throws Exception {
 
 		/*
-		Object serverSignalSource = accountRedisson.getBucket(serverPauseSignalRedisKey).get();
-		final Object serverSignalInfo = accountRedisson.getBucket(serverPauseSignalRedisInfoKey).get();
+		Object serverSignalSource = jedisPool.getBucket(serverPauseSignalRedisKey).get();
+		final Object serverSignalInfo = jedisPool.getBucket(serverPauseSignalRedisInfoKey).get();
 		final int serverSignal = (null == serverSignalSource || "".equals(serverSignalSource.toString().trim()))
 				? 0 : Integer.parseInt(serverSignalSource.toString().trim());
 		if(serverSignal!=0)return new HashMap<String,Object>()
@@ -282,8 +282,8 @@ public class AccountManagerServiceImpl {  //implements AccountManagerService {
 	@Transactional
 	public Map<String, Object> executeWithdrawal(Long id,Boolean ok) throws Exception{
 		/*
-		Object serverSignal = accountRedisson.getBucket(serverPauseSignalRedisKey).get();
-		final Object serverSignalInfo = accountRedisson.getBucket(serverPauseSignalRedisInfoKey).get();
+		Object serverSignal = jedisPool.getBucket(serverPauseSignalRedisKey).get();
+		final Object serverSignalInfo = jedisPool.getBucket(serverPauseSignalRedisInfoKey).get();
 		serverSignal = (null == serverSignal || "".equals(serverSignal.toString().trim()))
 				? 0 : Integer.parseInt(serverSignal.toString().trim());
 		if(!serverSignal.equals(0))return new HashMap<String,Object>()
@@ -305,7 +305,7 @@ public class AccountManagerServiceImpl {  //implements AccountManagerService {
 
 //	@Transactional
 //	public Map<String, Object> withdrawalBackMoney(Long id) throws Exception{
-//		Object serverSignal = accountRedisson.getBucket(serverPauseSignalRedisKey).get();
+//		Object serverSignal = jedisPool.getBucket(serverPauseSignalRedisKey).get();
 //		serverSignal = (null == serverSignal || "".equals(serverSignal.toString().trim()))
 //				? 0 : Integer.parseInt(serverSignal.toString().trim());
 //		if(!serverSignal.equals(0))return new HashMap<String,Object>()
@@ -325,7 +325,7 @@ public class AccountManagerServiceImpl {  //implements AccountManagerService {
 	@Transactional
 	public Map<String,Object> accountRechargeAdjustment(Map<String,Object> jsonParams) throws Exception{
 		/*
-		Object serverSignal = accountRedisson.getBucket(serverPauseSignalRedisKey).get();
+		Object serverSignal = jedisPool.getBucket(serverPauseSignalRedisKey).get();
 		serverSignal = (null == serverSignal || "".equals(serverSignal.toString().trim()))
 				? 0 : Integer.parseInt(serverSignal.toString().trim());
 		if(!serverSignal.equals(0))return new HashMap<String,Object>()

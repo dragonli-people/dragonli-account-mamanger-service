@@ -19,7 +19,7 @@ public class AccountCreateExecutor {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Long createChildAccount(Long userId, String reflexId, AssetEntity asset) {
-        AccountEntity userAccount = accountsRepository.findByUserIdAndReflexIdAndAssetName(
+        AccountEntity userAccount = accountsRepository.findByUserIdAndReflexIdAndCurrency(
                 userId, reflexId, asset.getCurrency());
         if (userAccount == null) {
             userAccount = new AccountEntity();

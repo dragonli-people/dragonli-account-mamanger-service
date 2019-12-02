@@ -1,6 +1,7 @@
 package org.dragonli.service.modules.accountmanagerservice.executor;
 
-
+import com.alibaba.dubbo.config.annotation.Reference;
+import com.alibaba.fastjson.JSONObject;
 import org.dragonli.service.modules.account.interfaces.AccountChangeService;
 import org.dragonli.service.modules.accountservice.entity.enums.*;
 import org.dragonli.service.modules.accountservice.entity.models.*;
@@ -12,13 +13,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.alibaba.dubbo.config.annotation.Reference;
-import com.alibaba.fastjson.JSONObject;
-
 import java.util.List;
 
 @Component
-public class CallBackExecutor {
+public class BusinessCallBackExecutor {
 
 	
 	final Logger logger = LoggerFactory.getLogger(getClass());
@@ -49,16 +47,21 @@ public class CallBackExecutor {
 	 */
 //	@Override
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	public void receiveRedisInfo(String jsonParams) throws Exception{
-		JSONObject json = JSONObject.parseObject(jsonParams);
-		Long businessId = json.getLong("busId");
-		Boolean change = json.getBoolean("result");
-		Long evidenceId  = json.getLong("id");
+	public void receiveRedisInfo(String content) throws Exception{
+//		Arrays.asList(evidence.getId(), evidence.getBusinessId(), change,
+//				System.currentTimeMillis())
+		String[] arr = content.split(",");
+//		JSONObject json = JSONObject.parseObject(jsonParams);
+		Long evidenceId  = Long.parseLong(arr[0]);//json.getLong("id");
+		Long businessId = Long.parseLong(arr[1]);// json.getLong("busId");
+		Boolean change = Boolean.parseBoolean(arr[2]);// json.getBoolean("result");
+		FundFlowEvidenceEntity currentFund = fundFlowEvidenceRepository.getOne(evidenceId);
+		if( currentFund.getFlowStatus().isFinalStatus )return;//必然是已经处理过的。多半因为停服而重新进来
 //		JSONObject json = JSONObject.parseObject(content);
 		logger.info(" receive account paras change : "+change+" evidenceId : "+evidenceId+" businessId : "+businessId);
 		BusinessEntity bus = businessRepository.getOne(businessId);
 		
-		int result = checkBusinss(bus, evidenceId, change);
+		int result = checkBusinss(bus, currentFund, change);
 		if(result == -1 || result == 2)//重复（理论上不会发生）或进行下一步（即未完成）
 			return;
 		boolean success = result == 0;
@@ -76,11 +79,11 @@ public class CallBackExecutor {
 	}
 
 	@Transactional
-	public int checkBusinss(BusinessEntity bus,Long evidenceId,Boolean change) throws Exception{
+	public int checkBusinss(BusinessEntity bus,FundFlowEvidenceEntity currentFund,Boolean change) throws Exception{
 		int currentStep = bus.getCurrentStep();
-		FundFlowEvidenceEntity currentFund = fundFlowEvidenceRepository.getOne(evidenceId);
+//		 = fundFlowEvidenceRepository.getOne(evidenceId);
 		if(currentFund.getStep() < currentStep) {
-			logger.info("消费ID ："+evidenceId+" 已处理");
+			logger.info("消费ID ："+currentFund.getId()+" 已处理");
 			return -1;
 		}
 		if(!change) {

@@ -82,7 +82,7 @@ public class PaymentExecutor {
 		,BigDecimal amount,String currency,String orderId,String remark) throws Exception {
 
 
-		AssetEntity asset = assetRepository.findByCode(currency);
+		AssetEntity asset = assetRepository.findByCurrency(currency);
 		AccountEntity fromAccount = accountsRepository.get(
 				accountCreateExecutor.createChildAccount(accountFrom.getUserId(), accountFrom.getReflexId(),  asset) );
 		AccountEntity toAccount = accountsRepository.get(
