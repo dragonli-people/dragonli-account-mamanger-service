@@ -10,7 +10,6 @@ import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.junit4.AbstractTransactionalJUnit4SpringContextTests;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Random;
 
@@ -31,7 +30,7 @@ public class AccountManagerServiceTest extends AbstractTransactionalJUnit4Spring
 //        accountManagerService
         String orderId = "adjust-admin-yy-zz-" + (new Random()).nextInt(1000000);
         System.out.println("==== order id: " + orderId + " ====");
-        accountManagerService.accountAdjustment(orderId, 1L, "GENERAL_RECEIVE", "CNY", BigDecimal.TEN,
+        accountManagerService.accountAdjustment(orderId, 1L, "GENERAL_RECEIVE", "CNY", "10",
                 "adjustment-to-admin-unit-test");
         String status = null;
         for (int i = 0; i < 100; i++) {
@@ -52,7 +51,7 @@ public class AccountManagerServiceTest extends AbstractTransactionalJUnit4Spring
 //        accountManagerService
         String orderId = "adjust-user-yy-zz-" + (new Random()).nextInt(1000000);
         System.out.println("==== order id: " + orderId + " ====");
-        accountManagerService.accountAdjustment(orderId, 2L, "", "CNY", new BigDecimal("5.5"),
+        accountManagerService.accountAdjustment(orderId, 2L, "", "CNY", "5.5",
                 "adjustment-to-user-unit-test");
         String status = null;
         for (int i = 0; i < 100; i++) {
@@ -73,7 +72,7 @@ public class AccountManagerServiceTest extends AbstractTransactionalJUnit4Spring
 //        accountManagerService
         String orderId = "pay-user-yy-zz-" + (new Random()).nextInt(1000000);
         System.out.println("==== order id: " + orderId + " ====");
-        Object r = accountManagerService.payment(2L, "", "GENERAL_RECEIVE", new BigDecimal("1.5"), "CNY", orderId,
+        Object r = accountManagerService.payment(2L, "", "GENERAL_RECEIVE", "1.5", "CNY", orderId,
                 "adjustment-to-user-unit-test", false);
         if(r == null){
             System.out.println("balance not enough");
