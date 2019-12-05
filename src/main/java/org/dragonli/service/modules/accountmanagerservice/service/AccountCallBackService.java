@@ -85,6 +85,7 @@ public class AccountCallBackService {
                 queue = jedis.lrange(accountCallBackRedisKey,0,len-1);
             }catch (Exception e){
                 logger.error(e.getMessage(), e);
+                return;
             }
             finally {
                 if(jedis != null) jedis.close();

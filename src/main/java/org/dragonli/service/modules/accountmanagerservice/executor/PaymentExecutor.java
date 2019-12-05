@@ -28,116 +28,112 @@ import java.util.Map;
 
 @Service
 public class PaymentExecutor {
-	
-	@Reference
-	AccountChangeService accountService;
-	
-	@Reference
-	OtherService otherService;
-	
-	@Reference
-	UserService userService;
+    @Reference
+    AccountChangeService accountService;
+    @Reference
+    OtherService otherService;
+    @Reference
+    UserService userService;
+    @Autowired
+    AssetRepository assetRepository;
+    @Autowired
+    AccountsRepository accountsRepository;
+    @Autowired
+    FundFlowEvidenceRepository fundFlowEvidenceRepository;
+    @Autowired
+    PaymentRepository paymentRepository;
+    @Autowired
+    BusinessRepository businessRepository;
+    @Autowired
+    WithdrawalRepository withdrawalRepository;
+    @Autowired
+    AccountCreateExecutor accountCreateExecutor;
+    @Autowired
+    BusinessExecutor businessExecutor;
+    @Value("${ADMIN_USER_NAME:admin}")
+    private String adminUserName;
+    final Logger logger = LoggerFactory.getLogger(getClass());
 
-	@Autowired
-	AssetRepository assetRepository;
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public PaymentEntity payment(Long userId, String reflexId, String target, BigDecimal amount, String currency,
+            String orderId, String remark) throws Exception {
+        Map<String, Object> admin = userService.findUserByKeyword(adminUserName);
+        if(admin==null)return null;
+        Long adminUserId = Long.parseLong(admin.get("id").toString());
 
-	@Autowired
-	AccountsRepository accountsRepository;
-	
-	@Autowired
-	FundFlowEvidenceRepository fundFlowEvidenceRepository;
-	
-	@Autowired
-	PaymentRepository paymentRepository;
-	
-	@Autowired
-	BusinessRepository businessRepository;
+        return payment(new AccountDto(userId, reflexId, currency), new AccountDto(adminUserId, target, currency),
+                userId, target, amount, currency, orderId, remark);
+    }
 
-	@Autowired
-	WithdrawalRepository withdrawalRepository;
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public PaymentEntity payment(AccountDto accountFrom, AccountDto accountTo, Long userId, String target,
+            BigDecimal amount, String currency, String orderId, String remark) throws Exception {
 
-	@Autowired
-	AccountCreateExecutor accountCreateExecutor;
+        AssetEntity asset = assetRepository.findByCurrency(currency);
+        AccountEntity fromAccount = accountsRepository.get(
+                accountCreateExecutor.createAccount(accountFrom.getUserId(), accountFrom.getReflexId(), asset));
+        AccountEntity toAccount = accountsRepository.get(
+                accountCreateExecutor.createAccount(accountTo.getUserId(), accountTo.getReflexId(), asset));
 
-	@Autowired
-	BusinessExecutor businessExecutor;
+        return payment(fromAccount.getId(), toAccount.getId(), userId, target, amount, currency, orderId, remark);
+    }
 
-	@Value("${ADMIN_USER_NAME}")
-	private String adminUserName;
-	
-	final Logger logger = LoggerFactory.getLogger(getClass());
-
-	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	public PaymentEntity payment(Long userId,String reflexId,String target
-			,BigDecimal amount,String currency,String orderId,String remark) throws Exception {
-		Map<String,Object> admin = userService.findUser(adminUserName);
-		Long adminUserId = (Long)admin.get("id");
-
-		return payment(new AccountDto(userId,reflexId,currency),new AccountDto(adminUserId,target,currency)
-				, userId, target , amount, currency, orderId, remark);
-	}
-
-	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	public PaymentEntity payment(AccountDto accountFrom,AccountDto accountTo,Long userId,String target
-		,BigDecimal amount,String currency,String orderId,String remark) throws Exception {
-
-
-		AssetEntity asset = assetRepository.findByCurrency(currency);
-		AccountEntity fromAccount = accountsRepository.get(
-				accountCreateExecutor.createChildAccount(accountFrom.getUserId(), accountFrom.getReflexId(),  asset) );
-		AccountEntity toAccount = accountsRepository.get(
-				accountCreateExecutor.createChildAccount(accountTo.getUserId(), accountTo.getReflexId(),  asset) );
-
-		return payment(fromAccount.getId(),toAccount.getId(),userId,target,amount,currency,orderId,remark);
-	}
-	
-	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	public PaymentEntity payment(long accountIdFrom,long accountIdTo,Long userId,String target
-			,BigDecimal amount,String currency,String orderId,String remark) throws Exception {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public PaymentEntity payment(long accountIdFrom, long accountIdTo, Long userId, String target, BigDecimal amount,
+            String currency, String orderId, String remark) throws Exception {
 
 //		final String type = BusinessFlowType.payAccount.name();
 //		int step = 2;
+        AccountEntity fromAccount = accountsRepository.getOne(accountIdFrom);
+        AccountEntity toAccount = accountsRepository.getOne(accountIdTo);
+        if(fromAccount.getBalance().add(amount).compareTo(BigDecimal.ZERO)<0)
+            return null;
+        if(toAccount.getBalance().add(amount.negate()).compareTo(BigDecimal.ZERO)<0)
+            return null;
 
-		PaymentEntity paymentEntity = paymentRepository.findByOrderId(orderId);
-		if (null != paymentEntity) return paymentEntity;
+        PaymentEntity paymentEntity = paymentRepository.findByOrderId(orderId);
+        if (null != paymentEntity) return paymentEntity;
 
-		paymentEntity = new PaymentEntity();
+        paymentEntity = new PaymentEntity();
 
-		paymentEntity.setOrderId(orderId);
-		paymentEntity.setCurrency(currency);
-		//后面有重复，待调整
-		paymentEntity.setFromAccountId(accountIdFrom);
-		paymentEntity.setToAccountId(accountIdTo);
-		paymentEntity.setStatus(PaymentStatus.INIT);
-		paymentEntity.setOutTime(3000L);
-		paymentEntity.setAmount(amount);
-		paymentEntity.setCurrency(currency);
-		paymentEntity.setRemark(remark);
-		paymentEntity.setUserId(userId);
-		paymentEntity.setTarget(target);
+        paymentEntity.setOrderId(orderId);
+        paymentEntity.setCurrency(currency);
+        //后面有重复，待调整
+        paymentEntity.setFromAccountId(accountIdFrom);
+        paymentEntity.setToAccountId(accountIdTo);
+        paymentEntity.setStatus(PaymentStatus.INIT);
+        paymentEntity.setOutTime(3000L);
+        paymentEntity.setAmount(amount);
+        paymentEntity.setCurrency(currency);
+        paymentEntity.setRemark(remark);
+        paymentEntity.setUserId(userId);
+        paymentEntity.setTarget(target);
+        paymentEntity.setBusinessId(0L);
+        paymentEntity.setCreatedAt(System.currentTimeMillis());
+        paymentEntity.setUpdatedAt(System.currentTimeMillis());
+        paymentEntity.setVersion(0);
+        return paymentRepository.save(paymentEntity);
+    }
 
-		return paymentEntity;
-	}
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public BusinessEntity createBusinessForPayment(Long id) throws Exception {
+        PaymentEntity paymentEntity = paymentRepository.getOne(id);
+        List<FundFlowDto> funds = new ArrayList<>(2);
+        //扣费一定要先作
+        if (paymentEntity.getAmount().compareTo(BigDecimal.ZERO) > 0) {
+            funds.add(new FundFlowDto(paymentEntity.getToAccountId(), paymentEntity.getAmount().negate()));
+            funds.add(new FundFlowDto(paymentEntity.getFromAccountId(), paymentEntity.getAmount()));
+        } else {
+            funds.add(new FundFlowDto(paymentEntity.getFromAccountId(), paymentEntity.getAmount()));
+            funds.add(new FundFlowDto(paymentEntity.getToAccountId(), paymentEntity.getAmount().negate()));
+        }
 
-	@Transactional
-	public BusinessEntity createBusinessForPayment(Long id) throws Exception{
-		PaymentEntity paymentEntity = paymentRepository.get(id);
-		List<FundFlowDto> funds = new ArrayList<>(2);
-		//扣费一定要先作
-		if(paymentEntity.getAmount().compareTo(BigDecimal.ZERO)>0){
-			funds.add( new FundFlowDto( paymentEntity.getToAccountId(),paymentEntity.getAmount().negate()));
-			funds.add( new FundFlowDto( paymentEntity.getFromAccountId(),paymentEntity.getAmount()));
-		}
-		else{
-			funds.add( new FundFlowDto( paymentEntity.getFromAccountId(),paymentEntity.getAmount()));
-			funds.add( new FundFlowDto( paymentEntity.getToAccountId(),paymentEntity.getAmount().negate()));
-		}
+        BusinessEntity businessEntity = businessExecutor.createBusiness(paymentEntity.getOrderId(), BusinessFlowType.payAccount,
+                paymentEntity.getId(), funds, paymentEntity.getRemark());
 
-		return businessExecutor.createBusiness(paymentEntity.getOrderId(),BusinessFlowType.payAccount,paymentEntity.getId(),funds);
-	}
+        paymentEntity.setBusinessId(businessEntity.getId());
+        paymentRepository.save(paymentEntity);
 
-
-
-
-
+        return businessEntity;
+    }
 }

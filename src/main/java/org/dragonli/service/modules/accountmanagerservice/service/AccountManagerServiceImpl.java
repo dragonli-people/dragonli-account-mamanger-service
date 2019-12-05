@@ -2,105 +2,112 @@ package org.dragonli.service.modules.accountmanagerservice.service;
 
 import com.alibaba.dubbo.config.annotation.Reference;
 import com.alibaba.dubbo.config.annotation.Service;
+import com.alibaba.fastjson.JSONObject;
 import org.dragonli.service.general.interfaces.general.OtherService;
 import org.dragonli.service.modules.account.interfaces.AccountChangeService;
 import org.dragonli.service.modules.account.interfaces.AccountManagerService;
-import org.dragonli.service.modules.accountmanagerservice.executor.DepositExecutor;
-import org.dragonli.service.modules.accountmanagerservice.executor.PaymentExecutor;
-import org.dragonli.service.modules.accountmanagerservice.executor.WithdrawalExecutor;
-import org.dragonli.service.modules.accountservice.constants.AccountConstants;
-import org.dragonli.service.modules.accountservice.entity.models.PaymentEntity;
+import org.dragonli.service.modules.accountmanagerservice.executor.*;
+import org.dragonli.service.modules.accountservice.entity.enums.AccountAdjustmentStatus;
+import org.dragonli.service.modules.accountservice.entity.enums.PaymentStatus;
+import org.dragonli.service.modules.accountservice.entity.models.*;
 import org.dragonli.service.modules.accountservice.repository.*;
-import org.redisson.api.RedissonClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.Map;
+import java.util.Optional;
 
-@Service(interfaceClass=AccountManagerService.class, register = true, timeout = 150000000, retries = -1, delay = -1)
-public class AccountManagerServiceImpl {  //implements AccountManagerService {
-	
-	final Logger logger = LoggerFactory.getLogger(getClass());
-	
-	@Reference
-	AccountChangeService accountService;
-	
-	@Reference
+@Service(interfaceClass = AccountManagerService.class, register = true, timeout = 150000000, retries = -1, delay = -1)
+public class AccountManagerServiceImpl implements AccountManagerService {
+    final Logger logger = LoggerFactory.getLogger(getClass());
+    @Reference
+    AccountChangeService accountChangeService;
+    @Reference
     OtherService otherService;
-	
-	
-	@Autowired
+    @Autowired
     AssetRepository assetRepository;
-	
-	@Autowired
+    @Autowired
     AccountsRepository accountsRepository;
-	
-	@Autowired
+    @Autowired
     FundFlowEvidenceRepository fundFlowEvidenceRepository;
-	
-	@Autowired
-	PaymentRepository paymentRepository;
-	
-	@Autowired
-	BusinessRepository businessRepository;
-
-
-	@Autowired
-	DepositRepository depositRepository;
-
-	@Autowired
-	WithdrawalRepository withdrawalRepository;
-
-	@Autowired
-	WithdrawalExecutor withdrawalExecutor;
-	
-	@Autowired
-	AccountAdjustmentRepository accountAdjustmentRepository;
-	
-	@Autowired
-	DepositExecutor DepositExecutor;
-
+    @Autowired
+    PaymentRepository paymentRepository;
+    @Autowired
+    BusinessRepository businessRepository;
+    @Autowired
+    DepositRepository depositRepository;
+    @Autowired
+    WithdrawalRepository withdrawalRepository;
+    @Autowired
+    WithdrawalExecutor withdrawalExecutor;
+    @Autowired
+    AccountAdjustmentRepository accountAdjustmentRepository;
+    @Autowired
+    DepositExecutor DepositExecutor;
     @Autowired
     AccountAssetsRecordRepository accountAssetsRecordRepository;
+    @Autowired
+    PaymentExecutor paymentExecutor;
 
     @Autowired
-	PaymentExecutor paymentExecutor;
+    AccountCreateExecutor accountCreateExecutor;
 
     @Autowired
-    @Qualifier(AccountConstants.ACCOUNT_REDIS)
-    RedissonClient accountRedisson;
+    AdjustmentExecutor adjustmentExecutor;
+    @Autowired
+    BusinessExecutor businessExecutor;
 
+//    @Value("${spring.dubbo-jackpot-service.info.redis.chainxServerPauseSignal}")
+//    String serverPauseSignalRedisKey;
+//    @Value("${spring.dubbo-jackpot-service.info.redis.chainxServerPauseSignalInfo}")
+//    String serverPauseSignalRedisInfoKey;
+//    private final String CHAINX_SERVICE_PAUSING = "CHAINX_SERVICE_PAUSING";
+//    private final String CHAINX_SERVICE_PAUSING_INFO = "CHAINX_SERVICE_PAUSING_INFO";
 
-	@Value("${spring.dubbo-jackpot-service.info.redis.chainxServerPauseSignal}")
-	String serverPauseSignalRedisKey;
-
-	@Value("${spring.dubbo-jackpot-service.info.redis.chainxServerPauseSignalInfo}")
-	String serverPauseSignalRedisInfoKey;
-
-	private final String CHAINX_SERVICE_PAUSING = "CHAINX_SERVICE_PAUSING";
-	private final String CHAINX_SERVICE_PAUSING_INFO = "CHAINX_SERVICE_PAUSING_INFO";
-
-
-	public Map<String,Object> withdrawal(Map<String,Object> jsonParams) throws Exception {
-		// TODO Auto-generated method stub
+    @Transactional
+    @Override
+    public Map<String, Object> withdrawal(Long userId, String reflexId,String currency, String amountStr) throws Exception {
+        // TODO Auto-generated method stub
+        BigDecimal amount = new BigDecimal(amountStr);
 //		Object serverSignal = jedisPool.getBucket(serverPauseSignalRedisKey).get();
 //		serverSignal = (null == serverSignal || "".equals(serverSignal.toString().trim()))
 //				? 0 : Integer.parseInt(serverSignal.toString().trim());
 //		if(!serverSignal.equals(0))return null;
-		return null;
-	}
+        return null;
+    }
 
-//	@Override
-	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	public String payment(Long userId,String reflexId,String target
-			,BigDecimal amount,String currency,String orderId,String remark,Boolean readOnly) throws Exception {
-		//todo
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Override
+    public Map<String, Object> paymentStatus(String orderId) throws Exception {
+        JSONObject result = new JSONObject();
+        PaymentStatus status = Optional.ofNullable(paymentRepository.findByOrderId(orderId)).orElseThrow(
+                () -> new Exception("cant find order id")).getStatus();
+        result.put("isFinish",status.isFinished());
+        result.put("status",status.name());
+        return result;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Override
+    public Map<String, Object> adjustmentStatus(String orderId) throws Exception {
+        JSONObject result = new JSONObject();
+        AccountAdjustmentStatus status = Optional.ofNullable(accountAdjustmentRepository.findFirstByOrderId(orderId)).orElseThrow(
+                () -> new Exception("cant find order id")).getStatus();
+        result.put("isFinish",status.isFinished());
+        result.put("status",status.name());
+        return result;
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public String payment(Long userId, String reflexId, String target, String amountStr, String currency,
+            String orderId, String remark, Boolean readOnly) throws Exception {
+        //todo
+        BigDecimal amount = new BigDecimal(amountStr);
 //		Object serverSignalSource = jedisPool.getBucket(serverPauseSignalRedisKey).get();
 //		final Object serverSignalInfo = jedisPool.getBucket(serverPauseSignalRedisInfoKey).get();
 //		final int serverSignal = (null == serverSignalSource || "".equals(serverSignalSource.toString().trim()))
@@ -111,18 +118,22 @@ public class AccountManagerServiceImpl {  //implements AccountManagerService {
 //			put(CHAINX_SERVICE_PAUSING_INFO, serverSignalInfo != null ?serverSignalInfo.toString():"");
 //		}};
 
-	    if( readOnly != null && readOnly )
-        {
+        if (readOnly != null && readOnly) {
             PaymentEntity paymentEntity = paymentRepository.findByOrderId(orderId);
             return paymentEntity == null ? null : paymentEntity.getStatus().name();
 //            return transfer == null ? null : transfer.getStatus().name();
         }
-		PaymentEntity paymentEntity = paymentExecutor.payment(userId,reflexId,target,amount,currency,orderId,remark);
-		paymentEntity = paymentRepository.get(paymentEntity.getId());
-		paymentExecutor.createBusinessForPayment(paymentEntity.getId());
-		return paymentEntity.getStatus().name();
+        PaymentEntity paymentEntity = paymentExecutor.payment(userId, reflexId, target, amount, currency, orderId,
+                remark);
+        if(paymentEntity==null)return null;
+        paymentEntity = paymentRepository.get(paymentEntity.getId());
+        BusinessEntity businessEntity = paymentExecutor.createBusinessForPayment(paymentEntity.getId());
+//        System.out.println("2 accountChangeService == null ?"+(accountChangeService==null));
+        businessExecutor.beginFundForBusiness(businessEntity.getId());
+        return paymentEntity.getStatus().name();
 
-//        Map<String,Object> body = chainxServicePayment.payment(username,applicationId,reflexId,amount,currency,orderId,tokenUrl,remark);
+//        Map<String,Object> body = chainxServicePayment.payment(username,applicationId,reflexId,amount,currency,
+//        orderId,tokenUrl,remark);
 //		if((boolean)body.get("result")) {
 //			switch(body.get("type").toString()) {
 //			case "recharge":
@@ -145,16 +156,13 @@ public class AccountManagerServiceImpl {  //implements AccountManagerService {
 //			put(CHAINX_SERVICE_PAUSING_INFO, serverSignalInfo != null ?serverSignalInfo.toString():"");
 //		}};
 //		return body.toString();
-	}
+    }
 
-
-
-	@Transactional
-	public Map<String, Object> accountWithdrawal(
-			Long applicationId, String userId, String amountStr, String currency, String orderId,
-			String address,String addressExtend
-	) throws Exception {
-
+    @Override
+    @Transactional
+    public Map<String, Object> accountWithdrawal(String userId, String amountStr, String currency,
+            String orderId, String address, String addressExtend) throws Exception {
+        BigDecimal amount = new BigDecimal(amountStr);
 		/*
 		Object serverSignalSource = jedisPool.getBucket(serverPauseSignalRedisKey).get();
 		final Object serverSignalInfo = jedisPool.getBucket(serverPauseSignalRedisInfoKey).get();
@@ -176,26 +184,19 @@ public class AccountManagerServiceImpl {  //implements AccountManagerService {
 				address,addressExtend
 		);
 		String res = chainxServiceBefore.payAccount(jsonParams);
-		JSONObject json = accountService.addChangeRecord("", res);
+		JSONObject json = accountChangeService.addChangeRecord("", res);
 		json.put(CHAINX_SERVICE_PAUSING,serverSignal);
 		json.put(CHAINX_SERVICE_PAUSING_INFO, serverSignalInfo != null ?serverSignalInfo.toString():"");
 		return json;
 		*/
-		return null;
-	}
+        return null;
+    }
 
-
-//	@Override
-	@Transactional
-	public Map<String, Object> userAccountWithdrawal() throws Exception {
-		return null;
-	}
-
-	@Deprecated
-//	@Override
-	@Transactional
-	public Map<String, Object> getUserAccount(Map<String, Object> jsonParams) throws Exception {
-		// TODO Auto-generated method stub
+    @Deprecated
+	@Override
+    @Transactional
+    public Map<String, Object> getUserAccount(Long userId,String reflexId,String currency) throws Exception {
+        // TODO Auto-generated method stub
 		/*
 		Long enterpriseId = Long.parseLong(jsonParams.get("enterpriseId").toString());
 		String userId = jsonParams.get("userId").toString();
@@ -214,7 +215,8 @@ public class AccountManagerServiceImpl {  //implements AccountManagerService {
 			return result;
 		}
 
-		Accounts userAccount = accountsRepository.findByUserIdAndReflexIdAndAssetName(enter.getUserId(), userId, currency);
+		Accounts userAccount = accountsRepository.findByUserIdAndReflexIdAndAssetName(enter.getUserId(), userId,
+		currency);
 		//todo 待提纯
 		if(userAccount== null) {
 			Accounts userB = new Accounts();
@@ -235,13 +237,13 @@ public class AccountManagerServiceImpl {  //implements AccountManagerService {
 		result.put("userAccount", userAccountInfo(userAccount));
 		return result;
 		*/
-		return null;
-	}
+        return null;
+    }
 
-	@Deprecated
-//	@Override
-	@Transactional
-	public Map<String, Object> userAccountList(Map<String, Object> jsonParams) throws Exception {
+    @Deprecated
+	@Override
+    @Transactional
+    public Map<String, Object> userAccountList(Long userId) throws Exception {
 		/*
 		Long enterpriseId = Long.parseLong(jsonParams.get("enterpriseId").toString());
 		String userId = jsonParams.get("userId").toString();
@@ -270,17 +272,18 @@ public class AccountManagerServiceImpl {  //implements AccountManagerService {
 				}).reduce(BigDecimal.ZERO,BigDecimal::add);
 		result.put("list",accounts.stream().map(v->userAccountInfo(v)).toArray());
 		if( valueOfCoinName != null )
-			result.put("sumValueOfCoinName",sumCny.divide(valueOfCoinAsset.getCnyRate(),20, RoundingMode.FLOOR).toPlainString());
+			result.put("sumValueOfCoinName",sumCny.divide(valueOfCoinAsset.getCnyRate(),20, RoundingMode.FLOOR)
+			.toPlainString());
 		result.put("sumValueOfCny",sumCny.toPlainString());
 		result.put("result",true);
 		return result;
 		*/
-		return null;
-	}
+        return null;
+    }
 
-//	@Override
-	@Transactional
-	public Map<String, Object> executeWithdrawal(Long id,Boolean ok) throws Exception{
+    @Override
+    @Transactional
+    public Map<String, Object> executeWithdrawal(Long id, Boolean ok) throws Exception {
 		/*
 		Object serverSignal = jedisPool.getBucket(serverPauseSignalRedisKey).get();
 		final Object serverSignalInfo = jedisPool.getBucket(serverPauseSignalRedisInfoKey).get();
@@ -300,8 +303,8 @@ public class AccountManagerServiceImpl {  //implements AccountManagerService {
 		result.put("status",withdrawal.getStatus());
 		return result;
 		*/
-		return null;
-	}
+        return null;
+    }
 
 //	@Transactional
 //	public Map<String, Object> withdrawalBackMoney(Long id) throws Exception{
@@ -320,10 +323,39 @@ public class AccountManagerServiceImpl {  //implements AccountManagerService {
 //		result.put("status",withdrawal.getStatus());
 //		return result;
 //	}
-	
-//	@Override
-	@Transactional
-	public Map<String,Object> accountRechargeAdjustment(Map<String,Object> jsonParams) throws Exception{
+
+    @Override
+    @Transactional
+    public String accountAdjustment(String orderId,Long userId,String reflexId,String currency,String amountStr,String remark) throws Exception {
+        BigDecimal amount = new BigDecimal(amountStr);
+        AccountAdjustmentEntity adjustment = accountAdjustmentRepository.findFirstByOrderId(orderId);
+        if(adjustment != null)return adjustment.getStatus().name();
+        AssetEntity asset = assetRepository.findByCurrency(currency);
+        AccountEntity account = accountsRepository.getOne(
+                accountCreateExecutor.createAccount(userId,reflexId,asset) );
+
+        adjustment = new AccountAdjustmentEntity();
+        adjustment.setOrderId(orderId);
+        adjustment.setStatus(AccountAdjustmentStatus.INIT);
+        adjustment.setInfo("{}");
+        adjustment.setRemark(remark);
+        adjustment.setOutTime(3000L);
+        adjustment.setAccountId(account.getId());
+        adjustment.setFlowAmount(amount);
+        adjustment.setUserId(userId);
+        adjustment.setBusinessId(0L);
+        adjustment.setCurrency(currency);
+        adjustment.setReflexId(reflexId);
+        adjustment.setCreatedAt(System.currentTimeMillis());
+        adjustment.setUpdatedAt(System.currentTimeMillis());
+        adjustment.setVersion(0);
+
+        adjustment = adjustmentExecutor.saveOne(adjustment);
+
+        BusinessEntity businessEntity = adjustmentExecutor.createBusinessForAdjustment(adjustment.getId());
+//        System.out.println("2 accountChangeService == null ?"+(accountChangeService==null));
+        businessExecutor.beginFundForBusiness(businessEntity.getId());
+        return adjustment.getStatus().name();
 		/*
 		Object serverSignal = jedisPool.getBucket(serverPauseSignalRedisKey).get();
 		serverSignal = (null == serverSignal || "".equals(serverSignal.toString().trim()))
@@ -365,11 +397,12 @@ public class AccountManagerServiceImpl {  //implements AccountManagerService {
 		
 		DepositExecutor.AccountAdjustmentByAdmin(ad.getId());
 		*/
-		return null;
-	}
+//        return null;
+    }
 
-	@Transactional
-	public Boolean fixBusiness(Long id) throws Exception{
+    @Override
+    @Transactional
+    public Boolean fixBusiness(Long id) throws Exception {
 		/*
 		检查并恢复business
 		0 如果全部都有明确结论，更新bisiness状态即可
@@ -378,39 +411,17 @@ public class AccountManagerServiceImpl {  //implements AccountManagerService {
 		如果扣钱队列未完成，删除扣钱队列的那一条。将business的步骤置为此步。并发起addChangeRecord
 		FundFlowEvidence keep = fundFlowEvidenceRepository.findByBusinessIdAndStep(bus.getId(),next.getCurrentStep());
 		logger.info("消费处理中…… 继续下一步 id "+ next.getId()+" 凭条 : "+keep.getId());
-		accountService.addChangeRecord("", JSONObject.toJSONString(keep));
+		accountChangeService.addChangeRecord("", JSONObject.toJSONString(keep));
 		3 如果没有这样的fund，且将step置为最后一条有结论者。调度redis队列
 		*/
 
-		return true;
-	}
+        return true;
+    }
 
-	@Transactional
-	public Boolean closeBusiness(Long id) throws Exception{
-		return true;
-	}
-
-//	@Transactional
-//    @Override
-//	public Long createChildAccount(String username,Long applicationId, String reflexId, String assetName) {
-//		Asset asset = assetRepository.findByCode(assetName);
-//		User user = userRepository.findByUsername(username);
-//		Application application = applicationRepository.getOne(applicationId);
-//		return createChildAccount(user,application,reflexId,asset);
-//    }
-
-//    @Transactional
-//    @Override
-//	public Long createChildAccount(Long userId,Long applicationId, String reflexId, Long assetId){
-//		Asset asset = assetRepository.getOne(assetId);
-//		User user = userRepository.getOne(userId);
-//		Application application = applicationRepository.getOne(applicationId);
-//		return createChildAccount(user,application,reflexId,asset);
-//    }
-
-//    @Transactional
-//    protected Long createChildAccount(User user,Application application, String reflexId, Asset asset){
-//		return chainxServiceBefore.createChildAccount( user,  application,  reflexId,  asset);
-//	}
+    @Override
+    @Transactional
+    public Boolean closeBusiness(Long id) throws Exception {
+        return true;
+    }
 
 }

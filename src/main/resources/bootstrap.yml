@@ -5,15 +5,24 @@ spring:
     active: ${EVN:dev}
   cloud:
     config:
-      uri: ${CONFIG_SERVER:http://192.168.7.109:8888}
+      uri: ${CONFIG_SERVER:http://192.168.7.189:8888}
 
 
 
+
+
+LOCAL_ADMIN_USER_NAME: @LOCAL_ADMIN_USER_NAME@
+ADMIN_USER_NAME: ${service.modules.user.admin.username:${LOCAL_ADMIN_USER_NAME}}
 
 DS_ACCOUNT_IS_PRIMARY: true
 
 # for package
 ACCOUNT_DATA_SOURCE_CONFIG: data-source-configs.account-db
 ACCOUNT_DATA_SOURCE_CONFIG_LOCAL: @ACCOUNT_DATA_SOURCE_CONFIG_LOCAL@
-LOCAL_ADMIN_USER_NAME: @LOCAL_ADMIN_USER_NAME@
-ADMIN_USER_NAME: ${service.modules.user.admin.username:${LOCAL_ADMIN_USER_NAME}}
+ACCOUNT_REDIS_CONFIG: ${LOCAL_ACCOUNT_REDIS_CONFIG:service.modules.account.redis-config}
+
+ACCOUNT_REDIS_CONFIG_ON: true
+
+
+#open just when unit test
+PRIMARY_ACCOUNT_CALL_BACK_HANDLER: true

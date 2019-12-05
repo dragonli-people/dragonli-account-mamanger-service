@@ -15,7 +15,7 @@
 
 	<properties>
 		<ACCOUNT_DATA_SOURCE_CONFIG_LOCAL></ACCOUNT_DATA_SOURCE_CONFIG_LOCAL>
-		<LOCAL_ADMIN_USER_NAME></LOCAL_ADMIN_USER_NAME>
+		<LOCAL_ADMIN_USER_NAME>admin</LOCAL_ADMIN_USER_NAME>
 	</properties>
 
 	<dependencies>
@@ -23,13 +23,13 @@
 		<dependency>
 			<groupId>org.dragonli.service</groupId>
 			<artifactId>dragonli-user-service-interfaces</artifactId>
-			<version>0.9.0</version>
+			<version>0.9.2</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.dragonli.service</groupId>
 			<artifactId>dragonli-account-service-interfaces</artifactId>
-			<version>0.9.0</version>
+			<version>0.9.3</version>
 		</dependency>
 
 		<dependency>
@@ -42,7 +42,7 @@
 		<dependency>
 			<groupId>org.dragonli.service</groupId>
 			<artifactId>dragonli-account-model-repository</artifactId>
-			<version>0.9.0</version>
+			<version>0.9.1</version>
 			<exclusions>
 				<exclusion>
 					<groupId>org.dragonli.service</groupId>

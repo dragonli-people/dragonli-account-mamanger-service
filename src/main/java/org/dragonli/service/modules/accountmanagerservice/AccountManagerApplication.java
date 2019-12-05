@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 @SpringBootApplication(exclude = {DataSourceAutoConfiguration.class},scanBasePackages={"org.dragonli"})
-@DubboComponentScan(basePackages = "org.dragonli.service.modules.accountchangeservice.service")
+@DubboComponentScan(basePackages = "org.dragonli.service.modules.accountmanagerservice.service")
 public class AccountManagerApplication extends DubboApplicationBase {
 	public AccountManagerApplication(
 			@Value("${service.micro-service.account-manager-service.application-name}") String applicationName,

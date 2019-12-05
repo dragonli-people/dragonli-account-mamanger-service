@@ -1,13 +1,11 @@
 package org.dragonli.service.modules.accountmanagerservice.executor;
 
+import com.alibaba.dubbo.config.annotation.Reference;
 import com.alibaba.fastjson.JSON;
-import jdk.nashorn.internal.ir.annotations.Reference;
 import org.dragonli.service.modules.account.interfaces.AccountChangeService;
 import org.dragonli.service.modules.accountmanagerservice.dto.FundFlowDto;
 import org.dragonli.service.modules.accountservice.entity.enums.BusinessFlowType;
 import org.dragonli.service.modules.accountservice.entity.enums.BusinessStatus;
-import org.dragonli.service.modules.accountservice.entity.enums.CurrencyType;
-import org.dragonli.service.modules.accountservice.entity.enums.EvidenceStatus;
 import org.dragonli.service.modules.accountservice.entity.models.AccountEntity;
 import org.dragonli.service.modules.accountservice.entity.models.AssetEntity;
 import org.dragonli.service.modules.accountservice.entity.models.BusinessEntity;
@@ -26,7 +24,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Random;
 
 @Component
 public class BusinessExecutor {
@@ -39,19 +36,18 @@ public class BusinessExecutor {
     @Autowired
     FundFlowEvidenceRepository fundFlowEvidenceRepository;
     @Reference
-    AccountChangeService accountService;
+    AccountChangeService accountChangeService;
 
     @Autowired
     FundFlowEvidenceTool fundFlowEvidenceTool;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public BusinessEntity createBusiness(String orderId, BusinessFlowType flowType, Long referenceId,
-            List<FundFlowDto> funds) {
+            List<FundFlowDto> funds,String remark) {
 
         BusinessEntity business = businessRepository.findByOrderId(orderId);
         if (business != null) return business;
         business = new BusinessEntity();
-
         business.setCurrentStep(1);
         business.setType(flowType);
         business.setSteps(funds.size());
@@ -59,6 +55,7 @@ public class BusinessExecutor {
         business.setOrderId(orderId);
         business.setReferenceId(referenceId);
         business.setStatus(BusinessStatus.INIT);
+        business.setRemark(remark);
         business.setCreatedAt(System.currentTimeMillis());
         business.setUpdatedAt(System.currentTimeMillis());
         business.setVersion(0);
@@ -71,10 +68,9 @@ public class BusinessExecutor {
             BigDecimal amount = stepInfo.getAmount();
             AccountEntity account = accountsRepository.get(accountId);
             AssetEntity asset = assetRepository.get(account.getAssetId());
-            step++;
 
             FundFlowEvidenceEntity fund = fundFlowEvidenceTool.initFundFlowEvidenceEntity(asset.getCurrency(), business.getId(),accountId
-                    ,amount, business.getOrderId(),step++,true);
+                    ,amount, business.getOrderId(),++step,true);
 //            FundFlowEvidenceEntity fund = new FundFlowEvidenceEntity();
 //            fund.setAccountId(accountId);
 //            fund.setFlowAmount(amount);
@@ -91,18 +87,19 @@ public class BusinessExecutor {
             evidences.add(fund);
         }
 
-//        accountService.addChangeRecord(keep.getId());
+//        accountChangeService.addChangeRecord(keep.getId());
         return business;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public boolean beginFundForBusiness(Long id) throws Exception {
+//        System.out.println("3 accountChangeService == null ?"+(accountChangeService==null));
         BusinessEntity business = businessRepository.get(id);
         List<FundFlowEvidenceEntity> list = fundFlowEvidenceRepository.findByBusinessIdAndStepAfter(id, 0);
         FundFlowEvidenceEntity first = list.stream().filter(v -> !v.getFlowStatus().isFinalStatus).sorted(
                 Comparator.comparing(FundFlowEvidenceEntity::getStep)).findFirst().orElse(null);
         if( first == null ) return false;
-        accountService.addChangeRecord(first.getId());
+        accountChangeService.addChangeRecord(first.getId());
         return true;
     }
 }

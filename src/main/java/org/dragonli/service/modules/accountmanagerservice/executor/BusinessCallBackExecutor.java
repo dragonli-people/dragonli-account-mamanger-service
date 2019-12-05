@@ -1,7 +1,6 @@
 package org.dragonli.service.modules.accountmanagerservice.executor;
 
 import com.alibaba.dubbo.config.annotation.Reference;
-import com.alibaba.fastjson.JSONObject;
 import org.dragonli.service.modules.account.interfaces.AccountChangeService;
 import org.dragonli.service.modules.accountservice.entity.enums.*;
 import org.dragonli.service.modules.accountservice.entity.models.*;
@@ -38,7 +37,7 @@ public class BusinessCallBackExecutor {
     DepositRepository depositRepository;
 	
 	@Reference
-	AccountChangeService accountService;
+	AccountChangeService accountChangeService;
 	
 	@Autowired
     AccountAdjustmentRepository accountAdjustmentRepository;
@@ -56,7 +55,7 @@ public class BusinessCallBackExecutor {
 		Long businessId = Long.parseLong(arr[1]);// json.getLong("busId");
 		Boolean change = Boolean.parseBoolean(arr[2]);// json.getBoolean("result");
 		FundFlowEvidenceEntity currentFund = fundFlowEvidenceRepository.getOne(evidenceId);
-		if( currentFund.getFlowStatus().isFinalStatus )return;//必然是已经处理过的。多半因为停服而重新进来
+		if( currentFund.getCallBackHandled() )return;//必然是已经处理过的。多半因为停服而重新进来
 //		JSONObject json = JSONObject.parseObject(content);
 		logger.info(" receive account paras change : "+change+" evidenceId : "+evidenceId+" businessId : "+businessId);
 		BusinessEntity bus = businessRepository.getOne(businessId);
@@ -91,6 +90,7 @@ public class BusinessCallBackExecutor {
 			List<FundFlowEvidenceEntity> failedList = fundFlowEvidenceRepository
 							.findByBusinessIdAndStepAfter(bus.getId(),currentStep);
 			failedList.stream().forEach(failed ->{
+				failed.setCallBackHandled(true);
 				failed.setFlowStatus(EvidenceStatus.FAILED);
 //				return failed;
 			});
@@ -100,7 +100,8 @@ public class BusinessCallBackExecutor {
 //			String reason =  currentFund.getFlowStatus().toString();
 			return 1;//"failed-finished";
 		}
-		currentFund.setFlowStatus(EvidenceStatus.SUCCESS);
+		currentFund.setCallBackHandled(true);
+		currentFund.setFlowStatus(EvidenceStatus.SUCCESS);//此处应该已经被设过了
 		currentFund = fundFlowEvidenceRepository.save(currentFund);
 		if(bus.getSteps() == bus.getCurrentStep()) {
 			//已经完成了，做后续处理就可以了
@@ -110,9 +111,10 @@ public class BusinessCallBackExecutor {
 		}
 		bus.setCurrentStep(currentStep+1);
 		BusinessEntity next =  businessRepository.save(bus);
+//		System.out.println("accountChangeService==null? : "+(accountChangeService==null));
 		FundFlowEvidenceEntity keep = fundFlowEvidenceRepository.findByBusinessIdAndStep(bus.getId(),next.getCurrentStep());
 //		logger.info("消费处理中…… 继续下一步 id "+ next.getId()+" 凭条 : "+keep.getId());
-		accountService.addChangeRecord(keep.getId());
+		accountChangeService.addChangeRecord(keep.getId());
 		return 2;
 	}
 	

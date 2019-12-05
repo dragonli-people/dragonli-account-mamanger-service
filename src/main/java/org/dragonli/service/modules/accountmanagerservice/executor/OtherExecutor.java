@@ -21,7 +21,7 @@
 ////	ChainXService chainxService;
 //
 //    @Reference
-//    AccountChangeService accountService;
+//    AccountChangeService accountChangeService;
 //
 //    @Autowired
 //    PaymentRepository paymentRepository;
