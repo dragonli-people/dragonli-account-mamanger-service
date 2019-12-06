@@ -331,8 +331,9 @@ public class AccountManagerServiceImpl implements AccountManagerService {
         AccountAdjustmentEntity adjustment = accountAdjustmentRepository.findFirstByOrderId(orderId);
         if(adjustment != null)return adjustment.getStatus().name();
         AssetEntity asset = assetRepository.findByCurrency(currency);
-        AccountEntity account = accountsRepository.getOne(
-                accountCreateExecutor.createAccount(userId,reflexId,asset) );
+        Long accountId = accountCreateExecutor.createAccount(userId,reflexId,asset);
+        accountsRepository.flush();
+        AccountEntity account = accountsRepository.getOne( accountId );
 
         adjustment = new AccountAdjustmentEntity();
         adjustment.setOrderId(orderId);
@@ -340,7 +341,7 @@ public class AccountManagerServiceImpl implements AccountManagerService {
         adjustment.setInfo("{}");
         adjustment.setRemark(remark);
         adjustment.setOutTime(3000L);
-        adjustment.setAccountId(account.getId());
+        adjustment.setAccountId(accountId);
         adjustment.setFlowAmount(amount);
         adjustment.setUserId(userId);
         adjustment.setBusinessId(0L);
