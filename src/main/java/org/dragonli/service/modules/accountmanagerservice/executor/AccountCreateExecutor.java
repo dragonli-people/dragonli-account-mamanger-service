@@ -32,6 +32,9 @@ public class AccountCreateExecutor {
             userAccount.setFrozen(BigDecimal.ZERO);
             userAccount.setOverdraft(BigDecimal.ZERO);
             userAccount.setAccountVersion(0);
+            userAccount.setCreatedAt(System.currentTimeMillis());
+            userAccount.setUpdatedAt(System.currentTimeMillis());
+            userAccount.setVersion(0);
             userAccount = accountsRepository.save(userAccount);
         }
 
