@@ -102,7 +102,7 @@ public class PaymentExecutor {
         paymentEntity.setFromAccountId(accountIdFrom);
         paymentEntity.setToAccountId(accountIdTo);
         paymentEntity.setStatus(PaymentStatus.INIT);
-        paymentEntity.setOutTime(3000L);
+        paymentEntity.setOutTime(System.currentTimeMillis()+3000L);
         paymentEntity.setAmount(amount);
         paymentEntity.setCurrency(currency);
         paymentEntity.setRemark(remark);

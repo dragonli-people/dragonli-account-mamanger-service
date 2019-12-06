@@ -343,7 +343,7 @@ public class AccountManagerServiceImpl implements AccountManagerService {
         adjustment.setStatus(AccountAdjustmentStatus.INIT);
         adjustment.setInfo("{}");
         adjustment.setRemark(remark);
-        adjustment.setOutTime(3000L);
+        adjustment.setOutTime(System.currentTimeMillis()+3000L);
         adjustment.setAccountId(accountId);
         adjustment.setFlowAmount(amount);
         adjustment.setUserId(userId);
