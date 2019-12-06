@@ -332,7 +332,7 @@ public class AccountManagerServiceImpl implements AccountManagerService {
         if(adjustment != null)return adjustment.getStatus().name();
         AssetEntity asset = assetRepository.findByCurrency(currency);
         Long accountId = accountCreateExecutor.createAccount(userId,reflexId,asset);
-        accountsRepository.refresh(null);
+        accountsRepository.flush();
         AccountEntity account = accountsRepository.getOne( accountId );
 
         adjustment = new AccountAdjustmentEntity();
