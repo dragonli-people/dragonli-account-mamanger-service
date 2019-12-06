@@ -23,7 +23,7 @@ public class AccountCreateExecutor {
                 userId, reflexId, asset.getCurrency());
         if (userAccount == null) {
             userAccount = new AccountEntity();
-            userAccount.setStatus(AccountsStatus.FICTITIOUS);
+            userAccount.setStatus(AccountsStatus.ACTIVE);
             userAccount.setAssetId(asset.getId());
             userAccount.setCurrency(asset.getCurrency());
             userAccount.setUserId(userId);
