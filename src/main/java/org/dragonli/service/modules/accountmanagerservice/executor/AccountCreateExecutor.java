@@ -38,8 +38,8 @@ public class AccountCreateExecutor {
             userAccount = accountsRepository.save(userAccount);
         }
 
-        accountsRepository.flush();
-        accountsRepository.refresh(userAccount);
+//        accountsRepository.flush();
+//        accountsRepository.refresh(userAccount);
         return userAccount.getId();
     }
 

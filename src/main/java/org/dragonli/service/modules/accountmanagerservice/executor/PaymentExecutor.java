@@ -55,25 +55,25 @@ public class PaymentExecutor {
     final Logger logger = LoggerFactory.getLogger(getClass());
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public PaymentEntity payment(Long userId, String reflexId, String target, BigDecimal amount, String currency,
+    public Long createAccountForPayment(Long userId, String reflexId, String target, BigDecimal amount, String currency,
             String orderId, String remark) throws Exception {
         Map<String, Object> admin = userService.findUserByKeyword(adminUserName);
         if(admin==null)return null;
         Long adminUserId = Long.parseLong(admin.get("id").toString());
+        AssetEntity asset = assetRepository.findByCurrency(currency);
 
-        return payment(new AccountDto(userId, reflexId, currency), new AccountDto(adminUserId, target, currency),
-                userId, target, amount, currency, orderId, remark);
+        accountCreateExecutor.createAccount(userId, reflexId, asset);
+        accountCreateExecutor.createAccount(adminUserId, target, asset);
+
+        return adminUserId;
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public PaymentEntity payment(AccountDto accountFrom, AccountDto accountTo, Long userId, String target,
-            BigDecimal amount, String currency, String orderId, String remark) throws Exception {
+    public PaymentEntity payment(Long adminUserId,Long userId, String reflexId, String target, BigDecimal amount, String currency,
+            String orderId, String remark) throws Exception {
 
-        AssetEntity asset = assetRepository.findByCurrency(currency);
-        AccountEntity fromAccount = accountsRepository.get(
-                accountCreateExecutor.createAccount(accountFrom.getUserId(), accountFrom.getReflexId(), asset));
-        AccountEntity toAccount = accountsRepository.get(
-                accountCreateExecutor.createAccount(accountTo.getUserId(), accountTo.getReflexId(), asset));
+        AccountEntity fromAccount = accountsRepository.findByUserIdAndReflexIdAndCurrency(userId,reflexId,currency);
+        AccountEntity toAccount = accountsRepository.findByUserIdAndReflexIdAndCurrency(adminUserId,target,currency);
 
         return payment(fromAccount.getId(), toAccount.getId(), userId, target, amount, currency, orderId, remark);
     }

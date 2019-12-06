@@ -52,10 +52,8 @@ public class AccountManagerServiceImpl implements AccountManagerService {
     AccountAssetsRecordRepository accountAssetsRecordRepository;
     @Autowired
     PaymentExecutor paymentExecutor;
-
     @Autowired
     AccountCreateExecutor accountCreateExecutor;
-
     @Autowired
     AdjustmentExecutor adjustmentExecutor;
     @Autowired
@@ -70,7 +68,8 @@ public class AccountManagerServiceImpl implements AccountManagerService {
 
     @Transactional
     @Override
-    public Map<String, Object> withdrawal(Long userId, String reflexId,String currency, String amountStr) throws Exception {
+    public Map<String, Object> withdrawal(Long userId, String reflexId, String currency,
+            String amountStr) throws Exception {
         // TODO Auto-generated method stub
         BigDecimal amount = new BigDecimal(amountStr);
 //		Object serverSignal = jedisPool.getBucket(serverPauseSignalRedisKey).get();
@@ -86,8 +85,8 @@ public class AccountManagerServiceImpl implements AccountManagerService {
         JSONObject result = new JSONObject();
         PaymentStatus status = Optional.ofNullable(paymentRepository.findByOrderId(orderId)).orElseThrow(
                 () -> new Exception("cant find order id")).getStatus();
-        result.put("isFinish",status.isFinished());
-        result.put("status",status.name());
+        result.put("isFinish", status.isFinished());
+        result.put("status", status.name());
         return result;
     }
 
@@ -95,10 +94,11 @@ public class AccountManagerServiceImpl implements AccountManagerService {
     @Override
     public Map<String, Object> adjustmentStatus(String orderId) throws Exception {
         JSONObject result = new JSONObject();
-        AccountAdjustmentStatus status = Optional.ofNullable(accountAdjustmentRepository.findFirstByOrderId(orderId)).orElseThrow(
+        AccountAdjustmentStatus status = Optional.ofNullable(
+                accountAdjustmentRepository.findFirstByOrderId(orderId)).orElseThrow(
                 () -> new Exception("cant find order id")).getStatus();
-        result.put("isFinish",status.isFinished());
-        result.put("status",status.name());
+        result.put("isFinish", status.isFinished());
+        result.put("status", status.name());
         return result;
     }
 
@@ -123,9 +123,11 @@ public class AccountManagerServiceImpl implements AccountManagerService {
             return paymentEntity == null ? null : paymentEntity.getStatus().name();
 //            return transfer == null ? null : transfer.getStatus().name();
         }
-        PaymentEntity paymentEntity = paymentExecutor.payment(userId, reflexId, target, amount, currency, orderId,
+        Long adminUserId = paymentExecutor.createAccountForPayment(userId, reflexId, target, amount, currency, orderId,
                 remark);
-        if(paymentEntity==null)return null;
+        PaymentEntity paymentEntity = paymentExecutor.payment(adminUserId, userId, reflexId, target, amount, currency,
+                orderId, remark);
+        if (paymentEntity == null) return null;
         paymentEntity = paymentRepository.get(paymentEntity.getId());
         BusinessEntity businessEntity = paymentExecutor.createBusinessForPayment(paymentEntity.getId());
 //        System.out.println("2 accountChangeService == null ?"+(accountChangeService==null));
@@ -160,8 +162,8 @@ public class AccountManagerServiceImpl implements AccountManagerService {
 
     @Override
     @Transactional
-    public Map<String, Object> accountWithdrawal(String userId, String amountStr, String currency,
-            String orderId, String address, String addressExtend) throws Exception {
+    public Map<String, Object> accountWithdrawal(String userId, String amountStr, String currency, String orderId,
+            String address, String addressExtend) throws Exception {
         BigDecimal amount = new BigDecimal(amountStr);
 		/*
 		Object serverSignalSource = jedisPool.getBucket(serverPauseSignalRedisKey).get();
@@ -193,9 +195,9 @@ public class AccountManagerServiceImpl implements AccountManagerService {
     }
 
     @Deprecated
-	@Override
+    @Override
     @Transactional
-    public Map<String, Object> getUserAccount(Long userId,String reflexId,String currency) throws Exception {
+    public Map<String, Object> getUserAccount(Long userId, String reflexId, String currency) throws Exception {
         // TODO Auto-generated method stub
 		/*
 		Long enterpriseId = Long.parseLong(jsonParams.get("enterpriseId").toString());
@@ -241,7 +243,7 @@ public class AccountManagerServiceImpl implements AccountManagerService {
     }
 
     @Deprecated
-	@Override
+    @Override
     @Transactional
     public Map<String, Object> userAccountList(Long userId) throws Exception {
 		/*
@@ -326,14 +328,15 @@ public class AccountManagerServiceImpl implements AccountManagerService {
 
     @Override
     @Transactional
-    public String accountAdjustment(String orderId,Long userId,String reflexId,String currency,String amountStr,String remark) throws Exception {
+    public String accountAdjustment(String orderId, Long userId, String reflexId, String currency, String amountStr,
+            String remark) throws Exception {
         BigDecimal amount = new BigDecimal(amountStr);
         AccountAdjustmentEntity adjustment = accountAdjustmentRepository.findFirstByOrderId(orderId);
-        if(adjustment != null)return adjustment.getStatus().name();
+        if (adjustment != null) return adjustment.getStatus().name();
         AssetEntity asset = assetRepository.findByCurrency(currency);
-        Long accountId = accountCreateExecutor.createAccount(userId,reflexId,asset);
-        accountsRepository.flush();
-        AccountEntity account = accountsRepository.getOne( accountId );
+        Long accountId = accountCreateExecutor.createAccount(userId, reflexId, asset);
+//        accountsRepository.flush();
+//        AccountEntity account = accountsRepository.getOne( accountId );
 
         adjustment = new AccountAdjustmentEntity();
         adjustment.setOrderId(orderId);
@@ -354,51 +357,8 @@ public class AccountManagerServiceImpl implements AccountManagerService {
         adjustment = adjustmentExecutor.saveOne(adjustment);
 
         BusinessEntity businessEntity = adjustmentExecutor.createBusinessForAdjustment(adjustment.getId());
-//        System.out.println("2 accountChangeService == null ?"+(accountChangeService==null));
         businessExecutor.beginFundForBusiness(businessEntity.getId());
         return adjustment.getStatus().name();
-		/*
-		Object serverSignal = jedisPool.getBucket(serverPauseSignalRedisKey).get();
-		serverSignal = (null == serverSignal || "".equals(serverSignal.toString().trim()))
-				? 0 : Integer.parseInt(serverSignal.toString().trim());
-		if(!serverSignal.equals(0))return new HashMap<String,Object>()
-		{{
-			put(CHAINX_SERVICE_PAUSING, true);
-		}};
-
-		Long enterpriseId = Long.parseLong(jsonParams.get("enterpriseId").toString());
-		String reflexId = jsonParams.get("reflexId").toString();
-		String applicationId =  jsonParams.get("applicationId").toString();
-		BigDecimal amount = new BigDecimal(jsonParams.get("amount").toString());
-		String currency = jsonParams.get("currency").toString();
-		String orderId = jsonParams.get("orderId").toString();
-		String info = jsonParams.get("info").toString();
-		Enterprise enter = enterpriseRepository.getOne(enterpriseId);
-		Asset asset = assetRepository.findByCode(currency);
-		Application application = applicationRepository.getOne(Long.parseLong(applicationId));
-		UserApplication userApplication = userApplicationRepository
-				.findByApplicationIdAndReflexIdAndAssetName(application.getId(),reflexId,asset.getCode());
-		Accounts accounts = accountsRepository.getOne(
-				createChildAccount(userApplication.getUserId(),application.getId(),reflexId,asset.getId()) );
-		AccountAdjustment adjustment = new AccountAdjustment();
-		adjustment.setOrderId(orderId);
-		adjustment.setStatus(AccountAdjustmentStatus.INIT);
-		adjustment.setAccountVersion(accounts.getAccountVersion());
-		adjustment.setInfo(info);
-		adjustment.setRemark("");
-		adjustment.setOutTime(3000L);
-		adjustment.setFlowAmount(amount);
-		adjustment.setCurrency(currency);
-		adjustment.setApplicationId(application.getId());
-		adjustment.setOwnerId(enter.getAccountOwnerId());
-		adjustment.setFlowType(BusinessFlowType.accountAdjustment.name().toString());
-		adjustment.setEnterpriseId(enterpriseId);
-		adjustment.setEnuserId(reflexId);
-		AccountAdjustment ad = chainxServiceBefore.saveAccountAdjustment(adjustment);
-		
-		DepositExecutor.AccountAdjustmentByAdmin(ad.getId());
-		*/
-//        return null;
     }
 
     @Override
@@ -424,5 +384,4 @@ public class AccountManagerServiceImpl implements AccountManagerService {
     public Boolean closeBusiness(Long id) throws Exception {
         return true;
     }
-
 }
