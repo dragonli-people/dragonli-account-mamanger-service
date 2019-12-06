@@ -39,6 +39,7 @@ public class AccountCreateExecutor {
         }
 
         accountsRepository.flush();
+        accountsRepository.refresh(userAccount);
         return userAccount.getId();
     }
 
