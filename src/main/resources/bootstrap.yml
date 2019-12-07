@@ -12,7 +12,7 @@ spring:
 
 
 LOCAL_ADMIN_USER_NAME: @LOCAL_ADMIN_USER_NAME@
-ADMIN_USER_NAME: ${service.modules.user.admin.username:${LOCAL_ADMIN_USER_NAME}}
+ADMIN_USER_NAME: ${service.module.user.admin-name:${LOCAL_ADMIN_USER_NAME}}
 
 DS_ACCOUNT_IS_PRIMARY: true
 
